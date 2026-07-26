@@ -18,7 +18,7 @@ provider "azurerm" {
 
 variable "location" {
   type    = string
-  default = "westeurope"
+  default = "northeurope"
 }
 
 variable "name_prefix" {
