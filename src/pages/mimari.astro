@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader.astro";
 
 <BaseLayout
   title="Bu Site Nasıl Çalışıyor"
-  description="Portfolyo sitesinin Azure, AKS, Terraform ve CI/CD mimarisi."
+  description="Portfolyo sitesinin Azure Container Apps, Terraform ve CI/CD mimarisi."
 >
   <PageHeader
     eyebrow="Canlı case study"
@@ -27,7 +27,7 @@ import PageHeader from "@/components/PageHeader.astro";
         ],
         [
           "03 / Runtime",
-          "Docker + AKS",
+          "Docker + Container Apps",
           "Root olmayan minimal NGINX image, health probe, resource limit ve kontrollü rollout.",
         ],
         [
@@ -37,8 +37,8 @@ import PageHeader from "@/components/PageHeader.astro";
         ],
         [
           "05 / Traffic",
-          "Azure DNS + Ingress",
-          "Alan adı, TLS ve tek public load balancer üzerinden yönlendirme.",
+          "Azure DNS + Managed TLS",
+          "Apex ve www alan adları, ücretsiz Azure managed certificate ile güvenli yönlendirme.",
         ],
         [
           "06 / Feedback",
@@ -58,9 +58,10 @@ import PageHeader from "@/components/PageHeader.astro";
     <div class="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-7">
       <p class="text-sm font-semibold text-amber-200">Maliyet dürüstlüğü</p>
       <p class="mt-2 leading-7 text-slate-400">
-        AKS bu trafik düzeyi için en ucuz hosting seçeneği değildir. Burada
-        öğrenme ve yetkinlik gösterimi amacıyla seçilmiştir; daha ekonomik
-        production alternatifi Azure Static Web Apps veya Container Apps’tir.
+        Container Apps Consumption istek olmadığında sıfıra ölçeklenir ve
+        sürekli AKS node maliyetini ortadan kaldırır. Immutable container,
+        revision, health probe, IaC ve observability pratiklerini korurken bu
+        trafik düzeyi için daha doğru production maliyetini sunar.
       </p>
     </div>
   </section>

@@ -18,21 +18,22 @@ variable "domain_name" {
   default = "aliberkyildiz.com"
 }
 
-variable "kubernetes_version" {
-  type    = string
-  default = null
-}
-
-variable "system_node_vm_size" {
-  description = "B-series is cost-effective but verify regional AKS support before apply."
+variable "container_image" {
+  description = "Immutable public Docker Hub image used for the initial Container App revision."
   type        = string
-  default     = "Standard_B2s"
+  default     = "docker.io/aliberkyldz/portfolio:1.0.0"
 }
 
-variable "enable_spot_pool" {
-  description = "Spot reduces compute cost but can be evicted; production remains functional on the system pool."
-  type        = bool
-  default     = true
+variable "min_replicas" {
+  description = "Zero enables scale-to-zero and minimizes idle cost."
+  type        = number
+  default     = 0
+}
+
+variable "max_replicas" {
+  description = "A conservative cap prevents unexpected personal-project spend."
+  type        = number
+  default     = 2
 }
 
 variable "enable_monitoring" {

@@ -1,3 +1,7 @@
 allowBuilds:
   esbuild: true
   sharp: true
+
+overrides:
+  brace-expansion: ">=5.0.8"
+  tmp: ">=0.2.6"
