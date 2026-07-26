@@ -42,6 +42,8 @@ resource "azurerm_storage_account" "state" {
   # checkov:skip=CKV_AZURE_206 LRS is intentional for low-cost, reproducible Terraform state.
   # checkov:skip=CKV_AZURE_59 GitHub-hosted OIDC runners require the public endpoint; keys are disabled and the container is private.
   # checkov:skip=CKV_AZURE_33 Queue service is unused; only the private Blob container stores state.
+  # checkov:skip=CKV2_AZURE_33 A private endpoint would prevent GitHub-hosted OIDC runners from reaching state.
+  # checkov:skip=CKV2_AZURE_1 Platform-managed encryption is sufficient for non-secret Terraform state.
   name                            = "st${var.name_prefix}${random_string.suffix.result}"
   resource_group_name             = azurerm_resource_group.state.name
   location                        = azurerm_resource_group.state.location
@@ -60,6 +62,7 @@ resource "azurerm_storage_account" "state" {
 }
 
 resource "azurerm_storage_container" "state" {
+  # checkov:skip=CKV2_AZURE_21 State reads are audited through Azure activity logs; Storage Analytics requires shared keys.
   name                  = "tfstate"
   storage_account_id    = azurerm_storage_account.state.id
   container_access_type = "private"
