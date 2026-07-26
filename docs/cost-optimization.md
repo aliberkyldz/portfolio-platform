@@ -9,14 +9,14 @@ aligning spend with real traffic.
 
 ## Main cost drivers
 
-| Component          | Cost behavior                 | Control                                      |
-| ------------------ | ----------------------------- | -------------------------------------------- |
-| Container Apps     | Requests and active resources | 0.25 vCPU, 0.5 GiB, scale 0 → 2              |
-| Log Analytics      | Ingestion and retention       | 30 days and 1 GB/day cap                     |
-| Azure DNS          | Hosted zone and query volume  | Direct authoritative DNS, no unnecessary CDN |
-| Terraform state    | Tiny storage/operation usage  | LRS storage                                  |
-| Docker Hub         | External image hosting        | Public repository and immutable tags         |
-| Managed certificate| No certificate charge         | Azure-managed issuance and renewal           |
+| Component           | Cost behavior                 | Control                                      |
+| ------------------- | ----------------------------- | -------------------------------------------- |
+| Container Apps      | Requests and active resources | 0.25 vCPU, 0.5 GiB, scale 0 → 2              |
+| Log Analytics       | Ingestion and retention       | 30 days and 1 GB/day cap                     |
+| Azure DNS           | Hosted zone and query volume  | Direct authoritative DNS, no unnecessary CDN |
+| Terraform state     | Tiny storage/operation usage  | LRS storage                                  |
+| Docker Hub          | External image hosting        | Public repository and immutable tags         |
+| Managed certificate | No certificate charge         | Azure-managed issuance and renewal           |
 
 Prices are not hard-coded because rates vary by region, currency and date.
 Review the Azure pricing calculator and Terraform plan before every apply.

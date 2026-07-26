@@ -63,6 +63,8 @@ jobs:
           framework: terraform
           quiet: true
           soft_fail: false
+          # The AKS module is retained as a portability reference; production uses Container Apps.
+          skip_path: terraform/modules/aks
           skip_check: CKV_AZURE_117,CKV_AZURE_170
 
   container-security:
@@ -78,7 +80,7 @@ jobs:
           tags: portfolio:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: portfolio:test
           format: sarif
