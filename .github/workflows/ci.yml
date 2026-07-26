@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: static-site
+          path: dist
+          retention-days: 7
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=high
+
+  terraform-security:
+    name: Terraform security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          soft_fail: false
+          skip_check: CKV_AZURE_117,CKV_AZURE_170
+
+  container-security:
+    name: Container security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: portfolio:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: portfolio:test
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: static-site
+          path: dist
+      - run: pnpm test:lighthouse
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Lighthouse" >> "$GITHUB_STEP_SUMMARY"
+          echo "Performance, accessibility, best practices and SEO thresholds: **90+**." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,5 @@
+resource_group_name  = "rg-abyportfolio-tfstate"
+storage_account_name = "REPLACE_ME"
+container_name       = "tfstate"
+key                  = "portfolio/prod.tfstate"
+use_azuread_auth     = true

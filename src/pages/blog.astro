@@ -1,0 +1,29 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+---
+
+<BaseLayout
+  title="Blog"
+  description="DevOps, SRE ve platform mühendisliği notları."
+>
+  <PageHeader
+    eyebrow="Blog"
+    title="Operasyon notları ve teknik derinlik."
+    intro="Gerçek olaylardan, mimari kararlardan ve üretim deneyimlerinden süzülen yazılar burada yayınlanacak."
+  />
+  <section class="container-shell pb-16">
+    <div class="surface rounded-2xl p-8 text-center sm:p-14">
+      <p class="font-mono text-sm text-teal-300">
+        HTTP 204 — CONTENT COMING SOON
+      </p>
+      <h2 class="mt-5 text-2xl font-semibold text-white">
+        İlk yazı hazırlanıyor.
+      </h2>
+      <p class="mx-auto mt-3 max-w-xl leading-7 text-slate-400">
+        İlk konu: kişisel bir projede AKS kullanmanın maliyet ve öğrenme değeri
+        arasındaki gerçek denge.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

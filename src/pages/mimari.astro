@@ -1,0 +1,67 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+---
+
+<BaseLayout
+  title="Bu Site Nasıl Çalışıyor"
+  description="Portfolyo sitesinin Azure, AKS, Terraform ve CI/CD mimarisi."
+>
+  <PageHeader
+    eyebrow="Canlı case study"
+    title="Bu site nasıl çalışıyor?"
+    intro="Basit bir statik sitenin arkasında; tekrar üretilebilir altyapı, güvenli teslimat zinciri ve ölçülebilir operasyon pratiği var."
+  />
+  <section class="container-shell grid gap-5 pb-16 md:grid-cols-2">
+    {
+      [
+        [
+          "01 / Source",
+          "Astro + Tailwind",
+          "Statik üretim, minimum istemci JavaScript’i ve yüksek Lighthouse hedefleri.",
+        ],
+        [
+          "02 / Supply chain",
+          "GitHub Actions",
+          "Lint, test, SAST, bağımlılık, container ve Terraform güvenlik taramaları.",
+        ],
+        [
+          "03 / Runtime",
+          "Docker + AKS",
+          "Root olmayan minimal NGINX image, health probe, resource limit ve kontrollü rollout.",
+        ],
+        [
+          "04 / Infrastructure",
+          "Terraform + Azure",
+          "Modüler kaynaklar, uzak state, managed identity, DNS ve izleme.",
+        ],
+        [
+          "05 / Traffic",
+          "Azure DNS + Ingress",
+          "Alan adı, TLS ve tek public load balancer üzerinden yönlendirme.",
+        ],
+        [
+          "06 / Feedback",
+          "Azure Monitor",
+          "CPU, bellek, restart ve ingress metrikleriyle operasyonel görünürlük.",
+        ],
+      ].map(([step, title, text]) => (
+        <article class="surface rounded-2xl p-7">
+          <p class="eyebrow">{step}</p>
+          <h2 class="mt-5 text-xl font-semibold text-white">{title}</h2>
+          <p class="mt-3 leading-7 text-slate-400">{text}</p>
+        </article>
+      ))
+    }
+  </section>
+  <section class="container-shell">
+    <div class="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-7">
+      <p class="text-sm font-semibold text-amber-200">Maliyet dürüstlüğü</p>
+      <p class="mt-2 leading-7 text-slate-400">
+        AKS bu trafik düzeyi için en ucuz hosting seçeneği değildir. Burada
+        öğrenme ve yetkinlik gösterimi amacıyla seçilmiştir; daha ekonomik
+        production alternatifi Azure Static Web Apps veya Container Apps’tir.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

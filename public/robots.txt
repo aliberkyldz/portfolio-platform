@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aliberkyildiz.com/sitemap-index.xml

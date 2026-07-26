@@ -1,0 +1,17 @@
+name: Helm
+on:
+  pull_request:
+    paths: ["helm/**"]
+  push:
+    branches: [main]
+    paths: ["helm/**"]
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint helm/portfolio --strict
+      - run: helm template portfolio helm/portfolio --values helm/portfolio/values-prod.yaml > /dev/null

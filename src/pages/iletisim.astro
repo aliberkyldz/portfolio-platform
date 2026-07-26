@@ -1,0 +1,55 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import { site } from "@/data/site";
+---
+
+<BaseLayout
+  title="İletişim / CV"
+  description="Ali Berk Yıldız ile iletişime geçin."
+>
+  <PageHeader
+    eyebrow="İletişim / CV"
+    title="Birlikte güvenilir sistemler kuralım."
+    intro="DevOps, SRE ve platform mühendisliği fırsatları için iletişime geçebilirsiniz."
+  />
+  <section class="container-shell grid gap-6 pb-16 md:grid-cols-2">
+    <a
+      class="surface rounded-2xl p-8 transition hover:border-teal-300/40"
+      href={`mailto:${site.email}`}
+    >
+      <p class="eyebrow">E-posta</p>
+      <p class="mt-6 text-xl font-semibold text-white">{site.email}</p>
+      <p class="mt-2 text-sm text-slate-400">Doğrudan e-posta gönder →</p>
+    </a>
+    <a
+      class="surface rounded-2xl p-8 transition hover:border-teal-300/40"
+      href={site.linkedin}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <p class="eyebrow">LinkedIn / CV</p>
+      <p class="mt-6 text-xl font-semibold text-white">Profesyonel profil</p>
+      <p class="mt-2 text-sm text-slate-400">
+        Deneyim, sertifika ve bağlantıları görüntüle →
+      </p>
+    </a>
+    <a
+      class="surface rounded-2xl p-8 transition hover:border-teal-300/40"
+      href={site.github}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <p class="eyebrow">GitHub</p>
+      <p class="mt-6 text-xl font-semibold text-white">@aliberkyldz</p>
+      <p class="mt-2 text-sm text-slate-400">
+        Kaynak kodları ve teknik çalışmaları görüntüle →
+      </p>
+    </a>
+    <div class="surface rounded-2xl p-8">
+      <p class="eyebrow">Konum</p>
+      <p class="mt-6 text-xl font-semibold text-white">{site.location}</p>
+      <p class="mt-2 text-sm text-slate-400">{site.company}</p>
+    </div>
+  </section>
+</BaseLayout>

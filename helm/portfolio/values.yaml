@@ -1,0 +1,44 @@
+replicaCount: 2
+
+image:
+  repository: aliberkyldz/portfolio
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  workloadIdentityClientId: ""
+
+service:
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: aliberkyildiz.com
+  wwwHost: www.aliberkyildiz.com
+  tlsSecretName: portfolio-tls
+  clusterIssuer: letsencrypt-prod
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  minAvailable: 1
+
+spot:
+  enabled: false
+
+networkPolicy:
+  enabled: true

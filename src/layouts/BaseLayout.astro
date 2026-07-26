@@ -1,0 +1,111 @@
+---
+import "../styles/global.css";
+import { navigation, site } from "@/data/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = site.name, description = site.summary } = Astro.props;
+const pageTitle =
+  title === site.name
+    ? `${site.name} — ${site.role}`
+    : `${title} — ${site.name}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <title>{pageTitle}</title>
+  </head>
+  <body class="min-h-screen antialiased">
+    <a
+      href="#icerik"
+      class="fixed top-3 left-3 z-50 -translate-y-24 rounded bg-teal-300 px-4 py-2 font-semibold text-slate-950 transition focus:translate-y-0"
+    >
+      İçeriğe geç
+    </a>
+    <header class="border-b border-white/8">
+      <nav
+        class="container-shell flex min-h-20 items-center justify-between gap-6"
+        aria-label="Ana menü"
+      >
+        <a
+          href="/"
+          class="font-mono text-sm font-bold tracking-tight text-white"
+        >
+          ABY<span class="text-teal-300">.</span>
+        </a>
+        <ul class="hidden items-center gap-5 lg:flex">
+          {
+            navigation.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  class:list={[
+                    "text-sm transition hover:text-teal-300",
+                    Astro.url.pathname === item.href
+                      ? "text-white"
+                      : "text-slate-400",
+                  ]}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <a
+          href="/iletisim/"
+          class="rounded-full border border-teal-300/40 px-4 py-2 text-sm font-semibold text-teal-200 transition hover:bg-teal-300 hover:text-slate-950"
+        >
+          İletişim
+        </a>
+      </nav>
+      <nav
+        class="container-shell overflow-x-auto pb-4 lg:hidden"
+        aria-label="Mobil menü"
+      >
+        <ul class="flex min-w-max gap-4">
+          {
+            navigation.map((item) => (
+              <li>
+                <a
+                  class="text-xs text-slate-400 hover:text-white"
+                  href={item.href}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+    <main id="icerik"><slot /></main>
+    <footer class="mt-24 border-t border-white/8 py-10">
+      <div
+        class="container-shell flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:justify-between"
+      >
+        <p>
+          © {new Date().getFullYear()}
+          {site.name}. Sade, hızlı ve gözlemlenebilir.
+        </p>
+        <p class="font-mono">build → measure → learn</p>
+      </div>
+    </footer>
+  </body>
+</html>

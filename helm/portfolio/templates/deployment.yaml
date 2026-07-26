@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "portfolio.fullname" . }}
+  labels:
+    {{- include "portfolio.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "portfolio.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "portfolio.name" . }}
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: portfolio
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.spot.enabled }}
+      nodeSelector:
+        workload: spot
+      tolerations:
+        - key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
+          effect: NoSchedule
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "portfolio.name" . }}
+      containers:
+        - name: portfolio
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          volumeMounts:
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}

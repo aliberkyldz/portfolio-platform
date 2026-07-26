@@ -1,0 +1,85 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths: ["terraform/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["terraform/**", ".github/workflows/terraform.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: plan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Init
+        working-directory: terraform
+        run: terraform init -backend-config=backend.hcl.example -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}"
+      - name: Format and validate
+        working-directory: terraform
+        run: terraform fmt -check -recursive && terraform validate
+      - name: Plan
+        id: plan
+        working-directory: terraform
+        run: terraform plan -no-color -var-file=environments/prod.tfvars -out=tfplan | tee plan.txt
+      - name: Publish PR summary
+        if: github.event_name == 'pull_request' && always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Terraform plan"
+            echo '```'
+            tail -c 60000 terraform/plan.txt
+            echo '```'
+          } > plan-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body-file plan-comment.md
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: terraform-plan
+          path: terraform/tfplan
+          retention-days: 1
+
+  apply:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - working-directory: terraform
+        run: terraform init -backend-config=backend.hcl.example -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}"
+      - working-directory: terraform
+        run: terraform apply -auto-approve tfplan

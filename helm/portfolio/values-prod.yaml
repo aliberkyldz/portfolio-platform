@@ -1,0 +1,11 @@
+image:
+  repository: aliberkyldz/portfolio
+
+ingress:
+  host: aliberkyildiz.com
+  wwwHost: www.aliberkyildiz.com
+
+# Keep false for availability on a one-node cluster. Enable only to demonstrate
+# Spot scheduling after confirming the system pool has spare failover capacity.
+spot:
+  enabled: false

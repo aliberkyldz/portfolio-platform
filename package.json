@@ -1,0 +1,38 @@
+{
+  "name": "aliberkyildiz-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "vitest run",
+    "test:lighthouse": "lhci autorun"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.4.1",
+    "@tailwindcss/vite": "^4.1.11",
+    "astro": "^5.12.4",
+    "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@eslint/js": "^9.32.0",
+    "@lhci/cli": "^0.15.1",
+    "@types/node": "^24.1.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-astro": "^1.3.1",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
+  }
+}
