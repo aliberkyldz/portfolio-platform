@@ -3,80 +3,56 @@
 ## ADR-001 — Astro static generation
 
 - **Status:** Accepted
-- **Context:** The portfolio is content-heavy and has no justified dynamic
-  backend requirement.
+- **Context:** The portfolio has no justified dynamic backend requirement.
 - **Decision:** Generate static HTML with Astro and Tailwind CSS.
 - **Consequences:** Minimal browser JavaScript, small attack surface and strong
-  performance. Content changes require a new build, which is acceptable.
+  performance. Content changes require a new immutable build.
 
-## ADR-002 — AKS as a learning-oriented runtime
+## ADR-002 — Container Apps Consumption for production
 
-- **Status:** Accepted with caveat
-- **Context:** The site must demonstrate Kubernetes operations, although its
-  traffic does not technically require Kubernetes.
-- **Decision:** Use AKS Free tier, one small system node and an optional Spot
-  user pool.
-- **Consequences:** The platform exposes Kubernetes, Helm, policy, probes,
-  autoscaling and identity skills. It costs materially more than static
-  hosting. A single system node is not highly available; two pods on that node
-  only protect against process failure, not node failure.
+- **Status:** Accepted, superseding the original AKS runtime decision
+- **Context:** A personal static portfolio does not justify a permanent
+  Kubernetes node and load balancer.
+- **Decision:** Run the NGINX image on Azure Container Apps Consumption with
+  `min_replicas = 0` and a conservative maximum.
+- **Consequences:** The app can scale to zero and Azure manages the runtime.
+  Cold starts are acceptable. Helm manifests remain as a portability and
+  Kubernetes skills reference, but are not the production control plane.
 
-## ADR-003 — Spot is optional capacity, not the availability baseline
-
-- **Status:** Accepted
-- **Context:** Spot VMs can be evicted at any time, and AKS system pools cannot
-  use Spot priority.
-- **Decision:** Keep one regular system pool and isolate Spot to a tainted user
-  pool. The production chart defaults to the regular pool.
-- **Consequences:** The cluster survives Spot eviction. Enabling the Spot pool
-  adds a second VM/disk and may increase rather than reduce total cost unless
-  workloads actually move off regular capacity.
-
-## ADR-004 — Docker Hub instead of ACR
+## ADR-003 — Docker Hub instead of ACR
 
 - **Status:** Accepted
-- **Context:** The project explicitly excludes Azure Container Registry.
 - **Decision:** Publish immutable SemVer images to Docker Hub using a
   least-privilege token.
 - **Consequences:** Avoids an ACR resource but introduces external registry
-  availability and pull-rate considerations. Production must never deploy
-  `latest`; it deploys an immutable release tag.
+  availability and public pull-rate considerations.
 
-## ADR-005 — Azure DNS without Cloudflare
-
-- **Status:** Accepted
-- **Context:** Authoritative DNS is needed; CDN/WAF features are not currently
-  justified.
-- **Decision:** Delegate the domain to Azure DNS and route directly to NGINX
-  Ingress.
-- **Consequences:** Simpler ownership and fewer moving parts. Azure DNS is not a
-  CDN or WAF. Add Azure Front Door or Cloudflare only after a measured need.
-
-## ADR-006 — Let's Encrypt through cert-manager
+## ADR-004 — Azure DNS without Cloudflare
 
 - **Status:** Accepted
-- **Context:** AKS does not provide Container Apps managed certificates.
-- **Decision:** Use cert-manager HTTP-01 with Let's Encrypt and NGINX Ingress.
-- **Consequences:** Automated issuance and renewal without storing certificate
-  files in Git. DNS must resolve and port 80 must remain reachable for HTTP-01.
+- **Decision:** Delegate the zone to Azure DNS and route apex directly to the
+  Container Apps environment; route `www` with CNAME.
+- **Consequences:** Fewer moving parts. Azure DNS is not a CDN or WAF; add Azure
+  Front Door or Cloudflare only after a measured requirement.
 
-## ADR-007 — Secretless Azure access
-
-- **Status:** Accepted
-- **Context:** Long-lived Azure credentials in GitHub or Kubernetes create
-  avoidable risk.
-- **Decision:** GitHub Actions uses OIDC federation and pods use AKS Workload
-  Identity. Key Vault uses RBAC.
-- **Consequences:** More initial federation configuration, but no client-secret
-  rotation burden.
-
-## ADR-008 — Bounded Azure-native observability
+## ADR-005 — Azure-managed TLS
 
 - **Status:** Accepted
-- **Context:** Logs are useful but ingestion can dominate a small project's
-  bill.
-- **Decision:** Use Container Insights, 30-day retention and a 1 GB/day cap.
-  Keep Prometheus/Grafana optional.
-- **Consequences:** Useful operational evidence with a spend guardrail.
-  Application Insights is provisioned, while request telemetry comes from
-  ingress logs to avoid shipping a browser SDK without a privacy need.
+- **Decision:** Bind the apex domain with HTTP validation and `www` with CNAME
+  validation, using free Container Apps managed certificates.
+- **Consequences:** Azure handles issuance and renewal. Let’s Encrypt,
+  cert-manager and an ingress controller are unnecessary in production.
+
+## ADR-006 — Secretless Azure access
+
+- **Status:** Accepted
+- **Decision:** GitHub Actions authenticates through OIDC workload identity
+  federation. No long-lived Azure client secret is stored in GitHub.
+
+## ADR-007 — Bounded Azure-native observability
+
+- **Status:** Accepted
+- **Decision:** Use Log Analytics with 30-day retention and a 1 GB/day cap,
+  Application Insights and a Container Apps request dashboard.
+- **Consequences:** Useful operational evidence with an explicit spend
+  guardrail.

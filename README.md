@@ -1,47 +1,48 @@
 # aliberkyildiz.com
 
-Production-grade personal portfolio and a live DevOps/SRE case study. The site
-is statically generated with Astro, served from a minimal non-root NGINX
-container, deployed to AKS with Helm, and provisioned with Terraform.
+Production-grade personal portfolio and live DevOps/SRE case study. Astro
+generates a static site, a minimal non-root NGINX container serves it, GitHub
+Actions publishes immutable images to Docker Hub, and Terraform provisions
+Azure Container Apps, Azure DNS and bounded observability.
 
-> **Cost reality:** AKS is deliberately used to demonstrate platform
-> engineering skills. It is not the cheapest way to host a static portfolio.
-> Azure Static Web Apps or Azure Container Apps is the recommended
-> cost-optimized production alternative.
+> **Cost decision:** Container Apps Consumption replaces the original AKS
+> runtime for production. It retains container, revision, probe, IaC and
+> observability practices while removing the permanent VM and load-balancer
+> cost. The Helm/AKS implementation remains in the repository as a portability
+> reference.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   User["Visitor"] --> DNS["Azure DNS"]
-  DNS --> LB["Azure Load Balancer"]
-  LB --> Ingress["NGINX Ingress + Let's Encrypt"]
-  Ingress --> Pods["Astro static site / NGINX pods"]
+  DNS --> ACA["Azure Container Apps / managed TLS"]
+  ACA --> NGINX["Non-root NGINX / Astro static site"]
 
   Dev["GitHub"] --> CI["Actions: quality + security"]
   CI --> Hub["Docker Hub"]
   CI --> TF["Terraform / Azure OIDC"]
-  Hub --> Pods
-  TF --> AKS["AKS Free tier"]
-  TF --> KV["Key Vault + Workload Identity"]
-  AKS --> Logs["Azure Monitor / Log Analytics"]
+  Hub --> ACA
+  TF --> ACA
+  TF --> DNS
+  ACA --> Logs["Azure Monitor / Log Analytics"]
 ```
 
 ## Repository
 
 ```text
 .
-├── src/                         Astro pages, layouts and editable content
+├── src/                         Astro pages, layouts and profile content
 ├── public/                      Static assets
 ├── tests/                       Content contract tests
-├── helm/portfolio/              Deployment, Service, Ingress, HPA and policies
+├── helm/portfolio/              Optional Kubernetes portability reference
 ├── terraform/
 │   ├── bootstrap/               One-time remote-state storage
 │   ├── environments/            Environment-specific variables
-│   └── modules/                 AKS, network, DNS, identity, vault, monitoring
+│   └── modules/                 Container Apps, DNS and monitoring
 ├── observability/               Queries, alert guidance and runbook
 ├── docs/                        Architecture and cost case study
-└── .github/workflows/           CI, security, Terraform, release and deployment
+└── .github/workflows/           CI, security, Terraform and release delivery
 ```
 
 ## Local development
@@ -60,6 +61,7 @@ pnpm format
 pnpm lint
 pnpm test
 pnpm build
+pnpm audit --audit-level=high
 pnpm test:lighthouse
 ```
 
@@ -73,76 +75,41 @@ curl --fail http://localhost:8080/healthz
 
 ## Infrastructure deployment
 
-1. Bootstrap the state account:
+1. Bootstrap the Terraform state account with `terraform/bootstrap`.
+2. Copy `terraform/backend.hcl.example` to ignored `terraform/backend.hcl`.
+3. Run `terraform plan` and `terraform apply` with
+   `environments/prod.tfvars`.
+4. Delegate `aliberkyildiz.com` at the registrar to the four Azure DNS name
+   servers from Terraform output.
+5. Bind apex and `www` with the release workflow. Azure issues and renews the
+   free managed certificates.
 
-   ```bash
-   cd terraform/bootstrap
-   terraform init
-   terraform apply
-   ```
-
-2. Copy `terraform/backend.hcl.example` to the ignored
-   `terraform/backend.hcl`, fill the bootstrap outputs, then:
-
-   ```bash
-   cd terraform
-   terraform init -backend-config=backend.hcl
-   terraform plan -var-file=environments/prod.tfvars
-   terraform apply -var-file=environments/prod.tfvars
-   ```
-
-3. Delegate `aliberkyildiz.com` at the domain registrar to the four Azure DNS
-   name servers from the Terraform output.
-
-4. Install ingress, cert-manager and the chart. The release workflow performs
-   these commands automatically after credentials are configured.
-
-5. Terraform creates a static public IP plus apex and `www` A records. The
-   release workflow assigns that reserved IP to NGINX Ingress.
+Azure DNS is sufficient as authoritative DNS. Cloudflare is intentionally
+omitted; add a CDN/WAF only after traffic or security requirements justify it.
 
 ## GitHub configuration
 
-Use GitHub OIDC federation for Azure; do not create an Azure client secret.
+Use GitHub OIDC federation for Azure; do not store an Azure client secret.
 
-Repository/environment secrets:
+| Name                       | Scope            | Purpose                       |
+| -------------------------- | ---------------- | ----------------------------- |
+| `AZURE_CLIENT_ID`          | plan, production | Federated deployment identity |
+| `AZURE_TENANT_ID`          | plan, production | Azure tenant                  |
+| `AZURE_SUBSCRIPTION_ID`    | plan, production | Azure subscription            |
+| `TF_STATE_STORAGE_ACCOUNT` | plan, production | Remote state                  |
+| `DOCKERHUB_USERNAME`       | production       | Image repository              |
+| `DOCKERHUB_TOKEN`          | production       | Least-privilege push token    |
 
-| Name                       | Scope            | Purpose                          |
-| -------------------------- | ---------------- | -------------------------------- |
-| `AZURE_CLIENT_ID`          | plan, production | Federated deployment identity    |
-| `AZURE_TENANT_ID`          | plan, production | Azure tenant                     |
-| `AZURE_SUBSCRIPTION_ID`    | plan, production | Azure subscription               |
-| `TF_STATE_STORAGE_ACCOUNT` | plan, production | Remote state                     |
-| `DOCKERHUB_USERNAME`       | production       | Image repository                 |
-| `DOCKERHUB_TOKEN`          | production       | Least-privilege Docker Hub token |
-
-Environment variables:
-
-| Name                          | Purpose                             |
-| ----------------------------- | ----------------------------------- |
-| `AZURE_RESOURCE_GROUP`        | AKS resource group                  |
-| `AKS_CLUSTER_NAME`            | Target cluster                      |
-| `WORKLOAD_IDENTITY_CLIENT_ID` | Pod federation annotation           |
-| `INGRESS_PUBLIC_IP`           | Terraform-managed static ingress IP |
-
-Protect `main` with:
-
-- pull requests and one approval;
-- required `Lint, test, build`, security, CodeQL, Helm and Terraform checks;
-- resolved conversations and linear history;
-- no direct pushes or force pushes;
-- `production` environment required reviewers for Terraform apply/deploy.
-
-GitHub administrators must configure these settings in repository settings;
-files in a repository cannot enforce branch protection by themselves.
+Protect `main` with pull requests, one approval, required quality/security
+checks, resolved conversations, linear history and no force pushes. Require
+reviewers on the `production` environment before Terraform apply and deploy.
 
 ## Releases
 
-Branches: `feature/*`, `fix/*`, and `infra/*`. Commit messages follow
-Conventional Commits (`feat:`, `fix:`, `infra:`, `docs:`, `chore:`).
-
-Create a SemVer tag such as `v1.0.0`. The release workflow builds an immutable,
-SBOM/provenance-enabled image, pushes it to Docker Hub, creates release notes,
-deploys with Helm `--atomic`, and executes a production smoke test.
+Branches use `feature/*`, `fix/*`, and `infra/*`; commits follow Conventional
+Commits. A SemVer tag such as `v1.0.0` publishes an SBOM/provenance-enabled
+Docker Hub image, updates the Container App revision, binds managed
+certificates and runs a production smoke test.
 
 ## Documentation
 
@@ -151,10 +118,3 @@ deploys with Helm `--atomic`, and executes a production smoke test.
 - [Operations runbook](observability/README.md)
 - [Contributing](CONTRIBUTING.md)
 - [Production readiness checklist](docs/production-readiness.md)
-
-## Known pre-production inputs
-
-The repository intentionally does not invent personal history. Update
-`src/data/site.ts`, `src/data/projects.ts`, the CV link, social profiles and
-real case-study metrics before public launch. Azure and Docker Hub credentials
-are also required before infrastructure can be applied.

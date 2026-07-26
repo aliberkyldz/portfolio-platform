@@ -13,6 +13,11 @@ permissions:
   contents: write
   id-token: write
 
+env:
+  RESOURCE_GROUP: rg-aby-portfolio-prod
+  CONTAINER_APP: ca-aby-portfolio-prod
+  CONTAINER_APP_ENVIRONMENT: cae-aby-portfolio-prod
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -31,6 +36,7 @@ jobs:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/portfolio
           tags: |
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=raw,value=${{ inputs.image_tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
       - uses: docker/build-push-action@v6
         with:
@@ -40,6 +46,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: mode=max
           sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -50,29 +58,45 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - uses: azure/setup-kubectl@v4
-      - uses: azure/setup-helm@v4
-      - name: AKS credentials
-        run: az aks get-credentials --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --name "${{ vars.AKS_CLUSTER_NAME }}" --overwrite-existing
-      - name: Install ingress and certificate controller
+      - name: Deploy immutable Container Apps revision
         run: |
-          helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace --set controller.replicaCount=1 --set controller.service.loadBalancerIP="${{ vars.INGRESS_PUBLIC_IP }}" --set-string controller.service.annotations."service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group"="${{ vars.AZURE_RESOURCE_GROUP }}"
-          helm upgrade --install cert-manager cert-manager --repo https://charts.jetstack.io --namespace cert-manager --create-namespace --set crds.enabled=true
-          kubectl apply -f helm/cluster-addons/letsencrypt-clusterissuer.yaml
-      - name: Deploy immutable release
+          az containerapp update \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --image "${{ secrets.DOCKERHUB_USERNAME }}/portfolio:${{ needs.publish.outputs.image_tag }}"
+      - name: Bind free Azure managed certificates
         run: |
-          helm upgrade --install portfolio helm/portfolio --namespace portfolio --create-namespace --values helm/portfolio/values-prod.yaml --set image.repository="${{ secrets.DOCKERHUB_USERNAME }}/portfolio" --set image.tag="${{ needs.publish.outputs.image_tag }}" --set serviceAccount.workloadIdentityClientId="${{ vars.WORKLOAD_IDENTITY_CLIENT_ID }}" --atomic --timeout 5m
+          az containerapp hostname add \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --hostname aliberkyildiz.com || true
+          az containerapp hostname bind \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --environment "$CONTAINER_APP_ENVIRONMENT" \
+            --hostname aliberkyildiz.com \
+            --validation-method HTTP
+          az containerapp hostname add \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --hostname www.aliberkyildiz.com || true
+          az containerapp hostname bind \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --environment "$CONTAINER_APP_ENVIRONMENT" \
+            --hostname www.aliberkyildiz.com \
+            --validation-method CNAME
       - name: Smoke test
-        run: curl --fail --retry 12 --retry-delay 10 --max-time 15 https://aliberkyildiz.com/healthz
+        run: curl --fail --retry 18 --retry-delay 10 --max-time 15 https://aliberkyildiz.com/healthz
       - name: Deployment summary
         if: always()
         run: |
           echo "## Production deployment" >> "$GITHUB_STEP_SUMMARY"
           echo "- Image: \`${{ secrets.DOCKERHUB_USERNAME }}/portfolio:${{ needs.publish.outputs.image_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Runtime: Azure Container Apps Consumption" >> "$GITHUB_STEP_SUMMARY"
           echo "- Target: https://aliberkyildiz.com" >> "$GITHUB_STEP_SUMMARY"

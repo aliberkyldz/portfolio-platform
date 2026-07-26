@@ -63,6 +63,8 @@ jobs:
           framework: terraform
           quiet: true
           soft_fail: false
+          # Legacy AKS support modules are retained as portability references.
+          skip_path: terraform/modules/(aks|networking|key-vault)
           skip_check: CKV_AZURE_117,CKV_AZURE_170
 
   container-security:
@@ -78,7 +80,7 @@ jobs:
           tags: portfolio:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: portfolio:test
           format: sarif
@@ -86,7 +88,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-results.sarif

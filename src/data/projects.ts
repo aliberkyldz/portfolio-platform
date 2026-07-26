@@ -3,10 +3,10 @@ export const projects = [
     slug: "production-grade-portfolio",
     title: "Production-grade Portfolyo Platformu",
     description:
-      "Astro, Docker, AKS, Terraform ve GitHub Actions ile uçtan uca teslimat platformu.",
+      "Astro, Docker, Azure Container Apps, Terraform ve GitHub Actions ile uçtan uca teslimat platformu.",
     impact:
       "Altyapı, güvenlik ve teslimat kararlarının canlı case study olarak sunulması.",
-    tags: ["AKS", "Terraform", "GitHub Actions", "Azure Monitor"],
+    tags: ["Container Apps", "Terraform", "GitHub Actions", "Azure Monitor"],
     status: "Aktif",
   },
   {
