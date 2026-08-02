@@ -58,7 +58,7 @@ jobs:
             echo '```'
           } > plan-comment.md
           gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body-file plan-comment.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.ref == 'refs/heads/main'
         with:
           name: terraform-plan
