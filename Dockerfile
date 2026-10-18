@@ -6,7 +6,7 @@ RUN corepack enable && pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM nginx:1.30.4-alpine3.24 AS runtime
+FROM nginx:1.30.5-alpine3.24 AS runtime
 RUN rm -rf /usr/share/nginx/html/* \
     && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run
 COPY nginx.conf /etc/nginx/nginx.conf
